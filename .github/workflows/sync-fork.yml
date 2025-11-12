@@ -11,19 +11,25 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0  # полная история для корректного rebase
 
-      - name: Set up Git and add upstream
+      - name: Set up Git and fetch upstream
         run: |
           git remote add upstream https://github.com/timeweb-cloud/app-example-svelte.git
           git fetch upstream
 
-      - name: Merge upstream changes into master
+      - name: Rebase master onto upstream/master
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
           git checkout master
-          git merge upstream/master --no-edit || echo "No changes to merge"
+          git rebase upstream/master || {
+            echo "Rebase failed — likely due to conflicts. Resolve manually."
+            exit 1
+          }
 
-      - name: Push changes to fork
+      - name: Force-push updated master
         run: |
-          git push origin master
+          git push --force-with-lease origin master
